@@ -1,0 +1,12 @@
+apiVersion: v2
+appVersion: 0.20.0
+description: Tinode Instant Messaging Server.
+name: tinode
+keywords:
+  - tinode
+maintainers:
+  - name: spybull
+    url: https://github.com/Spybull/tinode-helm-chart
+sources:
+  - https://github.com/tinode/chat
+version: 0.0.1
