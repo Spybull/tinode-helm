@@ -1,0 +1,12 @@
+{{- if .Values.smtpConfigurationEnv }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "tinode.fullname" . }}-smtpconfig
+  labels:
+    {{- include "tinode.labels" . | nindent 4 }}
+data:
+  {{- range $key, $value := .Values.smtpConfigurationEnv }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}

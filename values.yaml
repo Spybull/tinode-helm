@@ -13,13 +13,11 @@ image:
 imagePullSecrets:
   - name: "pullSecret-registry"
 
+cloudIngress: "k8s-cloud.example.com"
+
 # Default listen on 0.0.0.0:6060
 listenAddress: ""
 listenPort: 6060
-
-secrets:
-  MONGODB_USERNAME: ""
-  MONGODB_PASSWORD: ""
 
 # Use adapter depends on your database (see supported adapters)
 storeUseAdapter: "mongodb"
@@ -33,6 +31,28 @@ extraEnvVars:
     value: 'true'
   - name: MONGODB_TLS_ENABLED
     value: 'false'
+
+smtpConfigurationEnv:
+  # Set empty to disable email validation.
+  EMAIL_VERIFICATION_REQUIRED: "auth"
+  # Address of the SMPT server to use.
+  SMTP_SERVER: "smtp.example.com"
+  # SMTP port to use. "25" for basic email RFC 5321 (2821, 821), "587" for RFC 3207 (TLS).
+  SMTP_PORT: "25"
+  # Optional login to use for authentication; if missing, the connection is not authenticated.
+  SMTP_LOGIN: ""
+  #  RFC 5322 email address to show in the From: field.
+  SMTP_SENDER: "noreply@example.com"
+  # Missing or empty list means any email domain is accepted.
+  SMTP_DOMAINS: ""
+  # Dummy response to accept. REMOVE IT IN PRODUCTION!!! Otherwise anyone will be able to register
+  DEBUG_EMAIL_VERIFICATION_CODE: ""
+
+secrets:
+  MONGODB_USERNAME: ""
+  MONGODB_PASSWORD: ""
+# Password to use when authenticating the sender; used only if "login" is provided.
+  SMTP_PASSWORD: ""
 
 serviceAccount:
   create: false

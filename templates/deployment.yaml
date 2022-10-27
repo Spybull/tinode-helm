@@ -35,7 +35,8 @@ spec:
               value: {{ include "tinode.socket.string" . }}
             - name: STORE_USE_ADAPTER
               value: '{{ .Values.storeUseAdapter }}'
-            {{- if eq .Values.storeUseAdapter "mongodb" }}
+            - name: SMTP_HOST_URL
+              value: 'http://{{ $fullName }}.{{ .Values.cloudIngress }}/'
             - name: MONGODB_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -48,10 +49,18 @@ spec:
                   optional: true
                   name: {{ $fullName }}
                   key: MONGODB_PASSWORD
-            {{- end }}
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  optional: true
+                  name: {{ $fullName }}
+                  key: SMTP_PASSWORD
             {{- if .Values.extraEnvVars }}
             {{- toYaml .Values.extraEnvVars | nindent 12 }}
             {{- end }}
+          envFrom:
+          - configMapRef:
+              name: {{ $fullName }}-smtpconfig
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.registry | default "registry.hub.docker.com" }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
