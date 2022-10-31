@@ -31,43 +31,100 @@ spec:
       containers:
         - name: {{ .Chart.Name }}
           env:
-            - name: LISTEN_SOCKET
-              value: {{ include "tinode.socket.string" . }}
-            - name: STORE_USE_ADAPTER
-              value: '{{ .Values.storeUseAdapter }}'
-            - name: SMTP_HOST_URL
-              value: 'http://{{ $fullName }}.{{ .Values.cloudIngress }}/'
-            - name: MONGODB_USERNAME
+            - name: TINODE_BIND_PORT
+              value: '{{ .Values.service.app }}'
+            - name: TINODE_BIND_GRPC_PORT
+              value: '{{ .Values.service.grpc }}'
+      {{- if .Values.smtp.enabled }}
+        {{- if .Values.ingress.enabled }}
+            {{- if index .Values "ingress" "tls" }}
+            - name: TINODE_SMTP_HOST_URL
+              value: 'https://{{ index .Values.ingress.hosts 0 "host" }}'
+            {{- else }}
+            - name: TINODE_SMTP_HOST_URL
+              value: 'http://{{ index .Values.ingress.hosts 0 "host" }}'
+            {{- end -}}
+        {{- end }}
+        {{- if .Values.smtp.emailValidationRequired }}
+            - name: TINODE_EMAIL_VALIDATION
+              value: "auth"
+        {{- end -}}
+        {{- if .Values.smtp.auth.enabled }}
+            - name: TINODE_SMTP_AUTH_MECHANISM
+              value: '{{ .Values.smtp.auth.authMechanism }}'
+            - name: TINODE_SMTP_LOGIN
+              value: '{{ .Values.smtp.auth.login }}'
+            - name: TINODE_SMTP_SENDER_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  optional: true
+                  {{- if .Values.smtp.auth.existingSecret }}
+                  name: {{ .Values.smtp.auth.existingSecret }}
+                  {{ else }}
                   name: {{ $fullName }}
-                  key: MONGODB_USERNAME
-            - name: MONGODB_PASSWORD
+                  {{ end -}}
+                  key: TINODE_SMTP_SENDER_PASSWORD
+        {{- end }}
+            - name: TINODE_SMTP_SERVER
+              value: '{{ .Values.smtp.server }}'
+            - name: TINODE_SMTP_PORT
+              value: '{{ .Values.smtp.port }}'
+            - name: TINODE_SMTP_SENDER
+              value: '{{ .Values.smtp.sender }}'
+      {{- end }}
+      {{- if .Values.mongodb.enabled }}
+            - name: TINODE_USE_ADAPTER
+              value: "mongodb"
+        {{- if .Values.mongodb.uri }}
+            - name: TINODE_MONGODB_URI
+              value: '{{ .Values.mongodb.uri }}'
+        {{- else }}
+            - name: TINODE_MONGODB_ADDRESSES
+              value: '{{ .Values.mongodb.addresess | toJson }}'
+        {{- end }}
+            - name: TINODE_MONGODB_DATABASE
+              value: '{{ .Values.mongodb.database }}'
+            - name: TINODE_MONGODB_TLS
+              value: '{{ .Values.mongodb.tlsEnabled }}'
+            - name: TINODE_MONGODB_TLS_SKIP_VERIFY
+              value: '{{ .Values.mongodb.tlsSkipVerify }}'
+        {{- if .Values.mongodb.auth.enabled }}
+            - name: TINODE_MONGODB_AUTH_MECHANISM
+              value: '{{ .Values.mongodb.auth.authMechanism }}'
+            - name: TINODE_MONGODB_AUTH_SOURCE
+              value: '{{ .Values.mongodb.auth.authSource }}'
+            - name: TINODE_MONGODB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  optional: true
+                  {{- if .Values.mongodb.auth.existingSecret }}
+                  name: {{ .Values.mongodb.auth.existingSecret }}
+                  {{ else }}
                   name: {{ $fullName }}
-                  key: MONGODB_PASSWORD
-            - name: SMTP_PASSWORD
+                  {{- end }}
+                  key: TINODE_MONGODB_PASSWORD
+            - name: TINODE_MONGODB_USERNAME
               valueFrom:
                 secretKeyRef:
-                  optional: true
+                  {{- if .Values.mongodb.auth.existingSecret }}
+                  name: {{ .Values.mongodb.auth.existingSecret }}
+                  {{ else }}
                   name: {{ $fullName }}
-                  key: SMTP_PASSWORD
+                  {{- end }}
+                  key: TINODE_MONGODB_USERNAME
+        {{- end }}
+      {{- end }}
             {{- if .Values.extraEnvVars }}
             {{- toYaml .Values.extraEnvVars | nindent 12 }}
             {{- end }}
-          envFrom:
-          - configMapRef:
-              name: {{ $fullName }}-smtpconfig
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.registry | default "registry.hub.docker.com" }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }} 
           ports:
-            - name: http
-              containerPort: {{ .Values.listenPort }}
+            - name: app
+              containerPort: {{ .Values.service.app }}
+              protocol: TCP
+            - name: grpc
+              containerPort: {{ .Values.service.grpc }}
               protocol: TCP
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
